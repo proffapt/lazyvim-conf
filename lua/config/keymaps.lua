@@ -2,8 +2,8 @@
 -- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
 -- Add any additional keymaps here
 
-local opts = { noremap = true, silent = true }
-local keymap = LazyVim.safe_keymap_set
+-- vars
+local wk = require("which-key")
 
 -- custom logic
 local function entity_close()
@@ -13,8 +13,18 @@ local function entity_close()
   end
 end
 
--- toggle comment
-keymap({ "n", "v" }, "<Leader>/", "<cmd>normal gcc<cr>", { desc = "Toggle Comment" })
-
--- close anything - literally anything
-keymap("n", "<leader>X", entity_close, opts)
+wk.add({
+  -- Single Key Actions
+  {
+    "<leader>/",
+    "<cmd>normal gcc<cr>",
+    mode = { "n", "v" },
+    desc = "Toggle Comment",
+  },
+  {
+    "<leader>X",
+    entity_close,
+    desc = "Close any entity",
+    icon = "",
+  },
+})
