@@ -22,9 +22,16 @@ wk.add({
     desc = "Toggle Comment",
   },
   {
+    "ss",
+    "<cmd>w<cr>",
+    mode = { "n", "v" },
+    desc = "Save Buffer",
+    icon = "󰆓",
+  },
+  {
     "<leader>X",
     entity_close,
-    desc = "Close any entity",
+    desc = "Close any Entity",
     icon = "",
   },
 })
