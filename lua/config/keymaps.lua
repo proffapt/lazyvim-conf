@@ -13,6 +13,7 @@ local function entity_close()
   end
 end
 
+-- Which key setup
 wk.add({
   -- Single Key Actions
   {
