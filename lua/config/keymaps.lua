@@ -12,6 +12,14 @@ local function entity_close()
     Snacks.bufdelete()
   end
 end
+local function run_contexify_nvim()
+  local func_name = vim.fn.expand("<cword>") -- word under cursor
+  local file_path = vim.fn.expand("%:p") -- full path of current file
+  local script_path = "/Users/fbin-blr-0027/Desktop/scripts/contexify-nvim"
+
+  local cmd = string.format('bash %s %s "%s"', script_path, func_name, file_path)
+  vim.cmd("!" .. cmd)
+end
 
 -- Which key setup
 wk.add({
@@ -34,5 +42,12 @@ wk.add({
     entity_close,
     desc = "Close any Entity",
     icon = "",
+  },
+  {
+    "<leader>cx",
+    run_contexify_nvim,
+    name = "Contexify",
+    desc = "Inject ctx and update log and sentry calls to V3",
+    icon = "",
   },
 })
