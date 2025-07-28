@@ -25,7 +25,7 @@ local function run_duplicate_contexify_nvim()
   local file_path = vim.fn.expand("%:p") -- full path of current file
   local script_path = "/Users/fbin-blr-0027/Desktop/scripts/contexify-nvim"
 
-  local cmd = string.format('bash %s %s "%s --duplicate"', script_path, func_name, file_path)
+  local cmd = string.format('bash %s %s "%s" true', script_path, func_name, file_path)
   vim.cmd("!" .. cmd)
 end
 
