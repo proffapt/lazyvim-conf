@@ -39,6 +39,7 @@ local ignore_fn = {
   "json.Unmarshal",
   "json.NewEncoder",
   "json.NewDecoder",
+  "json.Valid",
 
   -- Strings
   "strings.Split",
