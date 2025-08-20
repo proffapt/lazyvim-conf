@@ -1,6 +1,20 @@
 local ignore_fn = {
   "general.InArr",
 
+  -- redis
+  "redis.Get",
+  "redis.Set",
+
+  -- database
+  "database.GetContext",
+  "database.ExecContext",
+  "database.SelectContext",
+  "database.NamedExecContext",
+  "txn.GetContext",
+  "txn.ExecContext",
+  "txn.SelectContext",
+  "txn.NamedExecContext",
+
   -- Logs
   "log.Printf",
   "log.Print",
