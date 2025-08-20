@@ -26,8 +26,6 @@ local function run_contexify()
   if not handle then
     vim.notify("Failed to start contexify script ❌", vim.log.levels.ERROR, { title = "Contexify " })
     return
-  else
-    vim.notify("Successfully started contexify script ✅", vim.log.levels.INFO, { title = "Contexify " })
   end
 
   local exit_code
@@ -51,7 +49,11 @@ local function run_contexify()
         { title = "Contexify " }
       )
     else
-      vim.notify("Contexify failed ❌", vim.log.levels.ERROR, { title = "Contexify " })
+      vim.notify(
+        "Failed contexified " .. func_name .. "function ❌",
+        vim.log.levels.ERROR,
+        { title = "Contexify " }
+      )
     end
   end)
 end
