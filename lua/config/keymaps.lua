@@ -43,17 +43,9 @@ local function run_contexify()
 
   vim.schedule(function()
     if exit_code == 0 then
-      vim.notify(
-        "Successfully contexified " .. func_name .. " function ✅",
-        vim.log.levels.INFO,
-        { title = "Contexify " }
-      )
+      vim.notify("Contexify successful ✅", vim.log.levels.INFO, { title = "Contexify " })
     else
-      vim.notify(
-        "Failed contexified " .. func_name .. " function ❌",
-        vim.log.levels.ERROR,
-        { title = "Contexify " }
-      )
+      vim.notify("Contexify failed ❌", vim.log.levels.ERROR, { title = "Contexify " })
     end
   end)
 end
