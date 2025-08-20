@@ -102,14 +102,11 @@ local function add_ctx_to_call(parent_func, child_func)
     end
 
     if inside_parent then
-      -- Only add ctx if it’s not already the first argument
-      local pattern = child_func .. "%(%s*ctx%s*,?"
-      if not line:match(pattern) then
-        local new_line, n = line:gsub(child_func .. "%(", child_func .. "(ctx, ")
-        if n > 0 then
-          vim.api.nvim_buf_set_lines(bufnr, i - 1, i, false, { new_line })
-          modified = true
-        end
+      -- Replace all occurrences of child_func( that do NOT already have ctx
+      local new_line, n = line:gsub(child_func .. "%(%s*(?!ctx)", child_func .. "(ctx, ")
+      if n > 0 then
+        vim.api.nvim_buf_set_lines(bufnr, i - 1, i, false, { new_line })
+        modified = true
       end
     end
   end
