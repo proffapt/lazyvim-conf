@@ -189,6 +189,12 @@ local function run_contexify(func_name)
       vim.notify("Contexify failed ❌", vim.log.levels.ERROR, { title = "Contexify " })
     end
   end)
+
+  vim.api.nvim_buf_call(0, function()
+    local view = vim.fn.winsaveview()
+    vim.cmd("edit")
+    vim.fn.winrestview(view)
+  end)
 end
 
 require("which-key").add({
