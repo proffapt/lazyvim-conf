@@ -33,38 +33,6 @@ local function get_calls_in_function(bufnr, func_name)
     return (ok and text) or ""
   end
 
-  -- Query-based argument extraction
-  local function get_arguments(call_node)
-    local args = {}
-    local ok, query = pcall(
-      ts.query.parse,
-      ft,
-      [[
-      (call_expression
-        arguments: (argument_list) @args)
-    ]]
-    )
-    if not ok or not query then
-      return args
-    end
-
-    for id, node, _ in query:iter_captures(call_node, bufnr, 0, -1) do
-      if id == 0 then -- @args capture
-        for i = 0, node:named_child_count() - 1 do
-          local child = node:named_child(i)
-          if child:type() ~= "," then
-            local text = safe_get_node_text(child)
-            if text ~= "" then
-              table.insert(args, text)
-            end
-          end
-        end
-      end
-    end
-    vim.notify(vim.inspect(args), vim.log.levels.DEBUG, { title = "Contexify " })
-    return args
-  end
-
   -- Query function by name
   local ok, query = pcall(
     ts.query.parse,
@@ -86,34 +54,26 @@ local function get_calls_in_function(bufnr, func_name)
     if id == 1 and name == func_name then
       local body_node = node:parent():field("body")[1]
       if body_node then
-        local ok2, call_query = pcall(
-          ts.query.parse,
-          ft,
-          [[
-          (call_expression
-            function: (_) @call_func)
-        ]]
-        )
-        if ok2 and call_query then
-          local s_row, e_row = body_node:start(), body_node:end_()
-          for _, call_node, _ in call_query:iter_captures(body_node, bufnr, s_row, e_row) do
-            local text = safe_get_node_text(call_node)
+        -- Get all lines inside the function
+        local s_row, e_row = body_node:start(), body_node:end_()
+        local lines = vim.api.nvim_buf_get_lines(bufnr, s_row, e_row, false)
+
+        for i, line in ipairs(lines) do
+          -- Look for any call: match identifier followed by (
+          for call_name in line:gmatch("([%w_%.]+)%s*%(") do
+            local args_str = line:match(call_name .. "%s*%((.*)%)") or ""
             local status = "❌"
 
-            local args = get_arguments(call_node)
-            for _, arg_text in ipairs(args) do
-              if arg_text:match("ctx") then
-                status = "✅"
-                break
-              elseif arg_text:match("context%.TODO") or arg_text:match("context%.Background") then
-                status = "⚠️"
-              end
+            if args_str:match("ctx") then
+              status = "✅"
+            elseif args_str:match("context%.TODO") or args_str:match("context%.Background") then
+              status = "⚠️"
             end
 
             table.insert(calls, {
-              name = text,
+              name = call_name,
               buf = bufnr,
-              line = call_node:start() + 1,
+              line = s_row + i,
               status = status,
             })
           end
