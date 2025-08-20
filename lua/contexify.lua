@@ -59,23 +59,26 @@ local function get_calls_in_function(bufnr, func_name)
         local lines = vim.api.nvim_buf_get_lines(bufnr, s_row, e_row, false)
 
         for i, line in ipairs(lines) do
-          -- Look for any call: match identifier followed by (
-          for call_name in line:gmatch("([%w_%.]+)%s*%(") do
-            local args_str = line:match(call_name .. "%s*%((.*)%)") or ""
-            local status = "❌"
+          -- Skip lines that start with "func"
+          if not line:match("^%s*func%s") then
+            -- Look for any call: match identifier followed by (
+            for call_name in line:gmatch("([%w_%.]+)%s*%(") do
+              local args_str = line:match(call_name .. "%s*%((.*)%)") or ""
+              local status = "❌"
 
-            if args_str:match("ctx") then
-              status = "✅"
-            elseif args_str:match("context%.TODO") or args_str:match("context%.Background") then
-              status = "⚠️"
+              if args_str:match("ctx") then
+                status = "✅"
+              elseif args_str:match("context%.TODO") or args_str:match("context%.Background") then
+                status = "⚠️"
+              end
+
+              table.insert(calls, {
+                name = call_name,
+                buf = bufnr,
+                line = s_row + i,
+                status = status,
+              })
             end
-
-            table.insert(calls, {
-              name = call_name,
-              buf = bufnr,
-              line = s_row + i,
-              status = status,
-            })
           end
         end
       end
@@ -152,8 +155,6 @@ local function pick_and_process(func_name)
         -- Trigger LSP "go to definition"
         vim.lsp.buf.definition()
       end
-
-      -- pick_and_process(choice.name)
     end
   end)
 end
