@@ -128,29 +128,43 @@ local function pick_and_process(func_name)
     return
   end
 
-  vim.ui.select(calls, {
+  -- Deduplicate by function name
+  local unique_calls = {}
+  local seen = {}
+  for _, c in ipairs(calls) do
+    if not seen[c.name] then
+      table.insert(unique_calls, c)
+      seen[c.name] = true
+    end
+  end
+
+  vim.ui.select(unique_calls, {
     prompt = "Function calls in " .. func_name,
     format_item = function(item)
       return item.status .. " " .. item.name
     end,
   }, function(choice)
     if choice then
+      -- Add ctx to ALL occurrences of this function in parent_func
       add_ctx_to_call(func_name, choice.name)
 
-      if choice.buf and choice.line and choice.name then
-        vim.api.nvim_set_current_buf(choice.buf)
+      -- Go to any one instance
+      local first_call = nil
+      for _, c in ipairs(calls) do
+        if c.name == choice.name then
+          first_call = c
+          break
+        end
+      end
 
-        -- Get the full line text
-        local line_text = vim.api.nvim_buf_get_lines(choice.buf, choice.line - 1, choice.line, false)[1]
+      if first_call and first_call.buf and first_call.line then
+        vim.api.nvim_set_current_buf(first_call.buf)
 
-        -- Get only the last part after dot
+        local line_text = vim.api.nvim_buf_get_lines(first_call.buf, first_call.line - 1, first_call.line, false)[1]
         local func_only = choice.name:match("[^.]+$") or choice.name
-
-        -- Find the column of the actual function name
         local col = line_text:find(func_only, 1, true) or 0
 
-        -- Move cursor to function name
-        vim.api.nvim_win_set_cursor(0, { choice.line, col })
+        vim.api.nvim_win_set_cursor(0, { first_call.line, col })
 
         -- Trigger LSP "go to definition"
         vim.lsp.buf.definition()
