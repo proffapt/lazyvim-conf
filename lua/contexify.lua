@@ -1,5 +1,30 @@
 -- Append to this list in order to ignore functions for contexification
-local ignore_fn_list = { "fmt.Println", "log.Printf", "general.InArr" }
+local ignore_fn_list = {
+  "general.InArr",
+  -- Logs
+  "log.Printf",
+  "log.Print",
+  "log.Println",
+  -- fmt
+  "fmt.Println",
+  -- Standard library functions
+  "json.Marshal",
+  "json.Unmarshal",
+  "strings.Split",
+  "strings.Join",
+  "bytes.NewBuffer",
+  "bytes.NewReader",
+  "make",
+  "len",
+  "cap",
+  "copy",
+  "append",
+  "string",
+  "byte",
+  "int",
+  "float64",
+  "bool",
+}
 
 local function get_calls_in_function(bufnr, func_name)
   bufnr = bufnr or 0
