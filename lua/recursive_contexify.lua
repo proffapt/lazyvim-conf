@@ -1,4 +1,4 @@
-local ts = require("nvim-treesitter")
+local contexify = require("contexify")
 local parsers = require("nvim-treesitter.parsers")
 
 -- 1️⃣ Get calls inside a function
@@ -96,28 +96,6 @@ local function add_ctx_to_call(parent_func, child_func)
   end
 end
 
--- 3️⃣ Run contexify on a function
-local function run_contexify_on_function(func_name)
-  local file_path = vim.fn.expand("%:p")
-  local pkg_name = vim.fn.systemlist("awk '/^package / {print $2; exit}' " .. file_path)[1]
-  local script_path = "/Users/fbin-blr-0027/Desktop/scripts/contexify"
-  local cmd = string.format('bash -c "%s %s %s \\"%s\\""', script_path, func_name, pkg_name, file_path)
-
-  vim.fn.jobstart(cmd, {
-    on_exit = function(_, code)
-      if code == 0 then
-        vim.schedule(function()
-          vim.notify("Contexify successful ✅: " .. func_name, vim.log.levels.INFO)
-        end)
-      else
-        vim.schedule(function()
-          vim.notify("Contexify failed ❌: " .. func_name, vim.log.levels.ERROR)
-        end)
-      end
-    end,
-  })
-end
-
 -- 4️⃣ Recursive picker using vim.ui.select
 local function pick_and_process(func_name)
   local calls = get_calls_in_function(0, func_name)
@@ -133,7 +111,7 @@ local function pick_and_process(func_name)
   }, function(choice)
     if choice then
       add_ctx_to_call(func_name, choice.name)
-      run_contexify_on_function(choice.name)
+      contexify.run_contexify(choice.name)
 
       if choice.buf and choice.line then
         vim.api.nvim_win_set_cursor(0, { choice.line, 0 })
@@ -150,7 +128,7 @@ require("which-key").add({
     "<leader>cX",
     function()
       local func_name = vim.fn.expand("<cword>")
-      run_contexify_on_function(func_name)
+      contexify.run_contexify(func_name)
       pick_and_process(func_name)
     end,
     name = "Recursive Contexify",
