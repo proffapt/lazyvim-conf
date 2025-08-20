@@ -258,6 +258,7 @@ local function pick_and_process(func_name)
 
         -- Contexify the definition
         run_contexify(func_only)
+        pick_and_process(func_only)
       end
     end
   end)
