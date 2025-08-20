@@ -102,23 +102,37 @@ local function add_ctx_to_call(parent_func, child_func)
     end
 
     if inside_parent then
-      -- Replace all occurrences of child_func( that do NOT already have ctx
-      local new_line, n = line:gsub(child_func .. "%(%s*(?!ctx)", child_func .. "(ctx, ")
-      if n > 0 then
+      -- Replace all occurrences of child_func( that do not already have ctx
+      local new_line = line
+      local start_pos = 1
+
+      while true do
+        local s, e = new_line:find(child_func .. "%(", start_pos)
+        if not s then
+          break
+        end
+
+        local after = new_line:sub(e + 1)
+        -- Check if 'ctx' is already the first argument
+        if not after:match("^%s*ctx%s*,?") then
+          new_line = new_line:sub(1, e) .. "ctx, " .. after
+          modified = true
+        end
+        start_pos = e + 1
+      end
+
+      if modified then
         vim.api.nvim_buf_set_lines(bufnr, i - 1, i, false, { new_line })
-        modified = true
       end
     end
   end
 
   -- Save buffer if modified
   if modified then
-    -- Save current buffer
     vim.api.nvim_buf_call(bufnr, function()
       vim.cmd("write")
     end)
 
-    -- Reload buffer while preserving cursor/view
     vim.api.nvim_buf_call(0, function()
       local view = vim.fn.winsaveview()
       vim.cmd("edit")
