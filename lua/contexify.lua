@@ -116,8 +116,16 @@ local function add_ctx_to_call(parent_func, child_func)
 
   -- Save buffer if modified
   if modified then
+    -- Save current buffer
     vim.api.nvim_buf_call(bufnr, function()
       vim.cmd("write")
+    end)
+
+    -- Reload buffer while preserving cursor/view
+    vim.api.nvim_buf_call(0, function()
+      local view = vim.fn.winsaveview()
+      vim.cmd("edit")
+      vim.fn.winrestview(view)
     end)
   end
 end
