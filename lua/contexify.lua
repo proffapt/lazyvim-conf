@@ -59,8 +59,8 @@ local function get_calls_in_function(bufnr, func_name)
         local lines = vim.api.nvim_buf_get_lines(bufnr, s_row, e_row, false)
 
         for i, line in ipairs(lines) do
-          -- Skip lines that start with "func"
-          if not line:match("^%s*func%s") then
+          -- Skip lines that start with "func" or comments
+          if not line:match("^%s*func%s") and not line:match("^%s*//") and line:match("%S") then
             -- Look for any call: match identifier followed by (
             for call_name in line:gmatch("([%w_%.]+)%s*%(") do
               local args_str = line:match(call_name .. "%s*%((.*)%)") or ""
