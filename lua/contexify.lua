@@ -24,7 +24,6 @@ local function get_calls_in_function(bufnr, func_name)
   local root = tree:root()
   local calls = {}
 
-  -- Safe get_node_text
   local function safe_get_node_text(node)
     if not node then
       return ""
@@ -33,7 +32,7 @@ local function get_calls_in_function(bufnr, func_name)
     return (ok and text) or ""
   end
 
-  -- Query function by name
+  -- Query the target function by name
   local ok, query = pcall(
     ts.query.parse,
     ft,
@@ -48,36 +47,62 @@ local function get_calls_in_function(bufnr, func_name)
     return {}
   end
 
+  -- Build a set of valid call positions from tree-sitter
+  local valid_calls = {}
+  local call_query = ts.query.parse(
+    ft,
+    [[
+    (call_expression
+      function: (identifier) @call)
+    (call_expression
+      function: (selector_expression) @call)
+  ]]
+  )
+  for id, node, _ in call_query:iter_captures(root, bufnr, 0, -1) do
+    if id == 1 then
+      local start_row = node:start()
+      valid_calls[start_row + 1] = valid_calls[start_row + 1] or {}
+      table.insert(valid_calls[start_row + 1], safe_get_node_text(node))
+    end
+  end
+
+  -- Process lines, only include calls recognized by Treesitter
   local start_row, end_row = 0, vim.api.nvim_buf_line_count(bufnr)
   for id, node, _ in query:iter_captures(root, bufnr, start_row, end_row) do
     local name = safe_get_node_text(node)
     if id == 1 and name == func_name then
       local body_node = node:parent():field("body")[1]
       if body_node then
-        -- Get all lines inside the function
         local s_row, e_row = body_node:start(), body_node:end_()
         local lines = vim.api.nvim_buf_get_lines(bufnr, s_row, e_row, false)
 
         for i, line in ipairs(lines) do
-          -- Skip lines that start with "func" or comments
           if not line:match("^%s*func%s") and not line:match("^%s*//") and line:match("%S") then
-            -- Look for any call: match identifier followed by (
             for call_name in line:gmatch("([%w_%.]+)%s*%(") do
-              local args_str = line:match(call_name .. "%s*%((.*)%)") or ""
-              local status = "❌"
-
-              if args_str:match("ctx") then
-                status = "✅"
-              elseif args_str:match("context%.TODO") or args_str:match("context%.Background") then
-                status = "⚠️"
+              local tree_calls = valid_calls[s_row + i] or {}
+              local matched = false
+              for _, tcall in ipairs(tree_calls) do
+                if tcall == call_name then
+                  matched = true
+                  break
+                end
               end
+              if matched and not vim.tbl_contains(contexify_list.ignore_fn, call_name) then
+                local args_str = line:match(call_name .. "%s*%((.*)%)") or ""
+                local status = "❌"
+                if args_str:match("ctx") then
+                  status = "✅"
+                elseif args_str:match("context%.TODO") or args_str:match("context%.Background") then
+                  status = "⚠️"
+                end
 
-              table.insert(calls, {
-                name = call_name,
-                buf = bufnr,
-                line = s_row + i,
-                status = status,
-              })
+                table.insert(calls, {
+                  name = call_name,
+                  buf = bufnr,
+                  line = s_row + i,
+                  status = status,
+                })
+              end
             end
           end
         end
@@ -87,7 +112,6 @@ local function get_calls_in_function(bufnr, func_name)
 
   return calls
 end
-
 local function add_ctx_to_call(parent_func, child_func)
   local bufnr = 0
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
