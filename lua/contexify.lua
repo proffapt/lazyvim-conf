@@ -255,10 +255,6 @@ local function pick_and_process(func_name)
 
         -- Trigger LSP "go to definition"
         vim.lsp.buf.definition()
-
-        -- Contexify the definition
-        run_contexify(func_only)
-        -- pick_and_process(func_only)
       end
     end
   end)
