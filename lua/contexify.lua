@@ -1,30 +1,4 @@
--- Append to this list in order to ignore functions for contexification
-local ignore_fn_list = {
-  "general.InArr",
-  -- Logs
-  "log.Printf",
-  "log.Print",
-  "log.Println",
-  -- fmt
-  "fmt.Println",
-  -- Standard library functions
-  "json.Marshal",
-  "json.Unmarshal",
-  "strings.Split",
-  "strings.Join",
-  "bytes.NewBuffer",
-  "bytes.NewReader",
-  "make",
-  "len",
-  "cap",
-  "copy",
-  "append",
-  "string",
-  "byte",
-  "int",
-  "float64",
-  "bool",
-}
+local contexify_list = require("contexify_list")
 
 local function get_calls_in_function(bufnr, func_name)
   bufnr = bufnr or 0
@@ -177,7 +151,7 @@ local function pick_and_process(func_name)
   local unique_calls = {}
   local seen = {}
   for _, c in ipairs(calls) do
-    if not seen[c.name] and not vim.tbl_contains(ignore_fn_list, c.name) then
+    if not seen[c.name] and not vim.tbl_contains(contexify_list.ignore_fn, c.name) then
       table.insert(unique_calls, c)
       seen[c.name] = true
     end
