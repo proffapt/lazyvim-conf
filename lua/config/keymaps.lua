@@ -16,8 +16,9 @@ local function run_contexify()
   local func_name = vim.fn.expand("<cword>") -- word under cursor
   local file_path = vim.fn.expand("%:p") -- full path of current file
   local script_path = "/Users/fbin-blr-0027/Desktop/scripts/contexify"
+  local pkg_name = vim.fn.systemlist("awk '/^package / {print $2; exit}' " .. file_path)[1]
 
-  local cmd = string.format('bash %s %s "%s"', script_path, func_name, file_path)
+  local cmd = string.format('bash %s %s %s "%s"', script_path, func_name, pkg_name, file_path)
   vim.cmd("!" .. cmd)
 end
 
