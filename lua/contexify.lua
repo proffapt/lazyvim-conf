@@ -140,8 +140,11 @@ local function pick_and_process(func_name)
         -- Get the full line text
         local line_text = vim.api.nvim_buf_get_lines(choice.buf, choice.line - 1, choice.line, false)[1]
 
-        -- Find the start column of the function name
-        local col = line_text:find(choice.name, 1, true) or 0
+        -- Get only the last part after dot
+        local func_only = choice.name:match("[^.]+$") or choice.name
+
+        -- Find the column of the actual function name
+        local col = line_text:find(func_only, 1, true) or 0
 
         -- Move cursor to function name
         vim.api.nvim_win_set_cursor(0, { choice.line, col })
