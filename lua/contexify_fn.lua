@@ -11,6 +11,7 @@ local ignore_list = {
 
   -- log
   "log.*",
+  "errorHandler.*",
 
   -- fmt
   "fmt.*",
