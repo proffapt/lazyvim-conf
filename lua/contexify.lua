@@ -1,4 +1,4 @@
-local contexify_list = require("contexify_list")
+local contexify_fn = require("contexify_fn")
 
 local function contexify_references(func_name)
   if func_name:match("Cont$") then
@@ -221,7 +221,7 @@ local function get_calls_in_function(bufnr, func_name)
                   break
                 end
               end
-              if matched and not vim.tbl_contains(contexify_list.ignore_fn, call_name) then
+              if matched and not contexify_fn.is_ignored(call_name) then
                 local args_str = line:match(call_name .. "%s*%((.*)%)") or ""
                 local status = "❌"
                 if args_str:match("ctx") then
@@ -309,7 +309,7 @@ local function pick_and_process(func_name)
   local unique_calls = {}
   local seen = {}
   for _, c in ipairs(calls) do
-    if not seen[c.name] and not vim.tbl_contains(contexify_list.ignore_fn, c.name) then
+    if not seen[c.name] and not contexify_fn.is_ignored(c.name) then
       table.insert(unique_calls, c)
       seen[c.name] = true
     end
