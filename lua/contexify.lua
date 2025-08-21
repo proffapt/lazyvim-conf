@@ -4,11 +4,18 @@ local function run_contexify(func_name)
   local script_path = "/Users/fbin-blr-0027/Desktop/scripts/contexify"
 
   local file_path = vim.fn.expand("%:p")
+  local line_no = vim.fn.line(".")
   local pkg_name = vim.fn.systemlist("awk '/^package / {print $2; exit}' " .. file_path)[1]
 
   -- Run script and echo exit code at the end
-  local cmd =
-    string.format('bash -c "%s %s %s \\"%s\\"; echo EXIT_CODE:$?"', script_path, func_name, pkg_name, file_path)
+  local cmd = string.format(
+    'bash -c "%s %s %s %s \\"%s\\"; echo EXIT_CODE:$?"',
+    script_path,
+    func_name,
+    line_no,
+    pkg_name,
+    file_path
+  )
 
   local handle = io.popen(cmd)
   if not handle then
