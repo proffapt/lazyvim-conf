@@ -163,6 +163,7 @@ local function get_calls_in_function(bufnr, func_name)
 
   return calls
 end
+
 local function add_ctx_to_call(parent_func, child_func)
   local bufnr = 0
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
