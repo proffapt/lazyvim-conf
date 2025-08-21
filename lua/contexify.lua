@@ -168,43 +168,53 @@ local function add_ctx_to_call(parent_func, child_func)
   local bufnr = 0
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local inside_parent = false
-  local modified = false
+  local any_modified = false
+
+  local parent_pat = "func%s+" .. vim.pesc(parent_func) .. "%("
+  local func_decl_start = "^%s*func%s"
+  local needle = child_func .. "(" -- exact, plain match
 
   for i, line in ipairs(lines) do
-    if line:match("func%s+" .. parent_func .. "%(") then
+    if line:match(parent_pat) then
       inside_parent = true
-    elseif inside_parent and line:match("^func%s") then
+    elseif inside_parent and line:match(func_decl_start) then
       inside_parent = false
     end
 
     if inside_parent then
-      -- Replace all occurrences of child_func( that do not already have ctx
       local new_line = line
-      local start_pos = 1
+      local idx = 1
+      local line_modified = false
 
       while true do
-        local s, e = new_line:find(child_func .. "%(", start_pos)
+        local s, e = new_line:find(needle, idx, true) -- plain literal search
         if not s then
           break
         end
 
-        local after = new_line:sub(e + 1)
-        -- Check if 'ctx' is already the first argument
-        if not after:match("^%s*ctx%s*,?") then
-          new_line = new_line:sub(1, e) .. "ctx, " .. after
-          modified = true
+        -- Ensure this isn't a substring inside a longer identifier.
+        local prev_char = (s > 1) and new_line:sub(s - 1, s - 1) or ""
+        if not prev_char:match("[%w_]") then
+          local after = new_line:sub(e + 1)
+
+          -- Skip if ctx/context is already the first argument.
+          if not after:match("^%s*ctx%s*,") and not after:match("^%s*context%s*%.") then
+            new_line = new_line:sub(1, e) .. "ctx, " .. after
+            line_modified = true
+          end
         end
-        start_pos = e + 1
+
+        idx = e + 1
       end
 
-      if modified then
+      if line_modified then
         vim.api.nvim_buf_set_lines(bufnr, i - 1, i, false, { new_line })
+        any_modified = true
       end
     end
   end
 
-  -- Save buffer if modified
-  if modified then
+  if any_modified then
     vim.api.nvim_buf_call(bufnr, function()
       vim.cmd("write")
     end)
