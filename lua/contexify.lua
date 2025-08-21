@@ -1,93 +1,13 @@
 local contexify_fn = require("contexify_fn")
 
-local function contexify_references(func_name)
-  if func_name:match("Cont$") then
-    return
-  end
-
-  local bufnr = 0
-  local params = vim.lsp.util.make_position_params(bufnr, "utf-16")
-
-  vim.lsp.buf_request(bufnr, "textDocument/references", params, function(err, result)
-    if err then
-      vim.schedule(function()
-        vim.notify("LSP reference request failed: " .. (err.message or tostring(err)), vim.log.levels.ERROR)
-      end)
-      return
-    end
-
-    if not result or vim.tbl_isempty(result) then
-      vim.schedule(function()
-        vim.notify("No references found for " .. func_name, vim.log.levels.INFO)
-      end)
-      return
-    end
-
-    local modified_buffers = {}
-    local seen_lines = {}  -- Track unique line content per buffer
-
-    for _, ref in ipairs(result) do
-      local ref_buf = vim.uri_to_bufnr(ref.uri)
-      if not vim.api.nvim_buf_is_loaded(ref_buf) then
-        local ok, _ = pcall(vim.fn.bufload, ref_buf)
-        if not ok then
-          vim.schedule(function()
-            vim.notify(
-              "⚠️ Skipped buffer (swap file or locked): " .. vim.api.nvim_buf_get_name(ref_buf),
-              vim.log.levels.WARN
-            )
-          end)
-          goto continue
-        end
-      end
-
-      local start_line = ref.range.start.line
-      local lines = vim.api.nvim_buf_get_lines(ref_buf, start_line, start_line + 1, false)
-      if not lines or #lines == 0 then
-        goto continue
-      end
-      local line = lines[1]
-
-      -- Skip if this line content was already modified
-      seen_lines[ref_buf] = seen_lines[ref_buf] or {}
-      if seen_lines[ref_buf][line] then
-        goto continue
-      end
-
-      -- Apply gsub once per unique line content
-      line = line:gsub(func_name .. "%(", func_name .. "(context.TODO(), ")
-      vim.api.nvim_buf_set_lines(ref_buf, start_line, start_line + 1, false, { line })
-      modified_buffers[ref_buf] = true
-      seen_lines[ref_buf][line] = true  -- Mark this line as modified
-
-      ::continue::
-    end
-
-    -- Save and run goimports only for successfully modified buffers
-    for buf, _ in pairs(modified_buffers) do
-      vim.schedule(function()
-        local name = vim.api.nvim_buf_get_name(buf)
-        if vim.api.nvim_buf_is_loaded(buf) then
-          vim.api.nvim_buf_call(buf, function()
-            vim.cmd("write")
-          end)
-          vim.fn.system("goimports -w " .. name)
-        end
-      end)
-    end
-
-    vim.schedule(function()
-      vim.notify("✅ Contexified " .. func_name .. " across all references", vim.log.levels.INFO)
-    end)
-  end)
-end
-
 local function run_contexify(func_name)
   local script_path = "/Users/fbin-blr-0027/Desktop/scripts/contexify"
+
   local file_path = vim.fn.expand("%:p")
   local line_no = vim.fn.line(".")
   local pkg_name = vim.fn.systemlist("awk '/^package / {print $2; exit}' " .. file_path)[1]
 
+  -- Run script and echo exit code at the end
   local cmd = string.format(
     'bash -c "%s %s %s %s \\"%s\\"; echo EXIT_CODE:$?"',
     script_path,
@@ -113,6 +33,7 @@ local function run_contexify(func_name)
       end)
     end
   end
+
   handle:close()
 
   vim.schedule(function()
@@ -123,10 +44,6 @@ local function run_contexify(func_name)
     end
   end)
 
-  -- Call LSP-based references
-  contexify_references(func_name)
-
-  -- Reload buffer to reflect changes
   vim.api.nvim_buf_call(0, function()
     local view = vim.fn.winsaveview()
     vim.cmd("edit")
