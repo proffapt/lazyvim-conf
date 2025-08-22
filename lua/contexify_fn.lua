@@ -1,6 +1,10 @@
 local ignore_list = {
   "general.InArr",
 
+  -- others
+  "retry.*",
+  "tracer.*",
+
   -- redis
   "redis.*",
 
@@ -12,6 +16,10 @@ local ignore_list = {
   -- log
   "log.*",
   "errorHandler.*",
+
+  -- errors
+  "errors.*",
+  "err.*",
 
   -- fmt
   "fmt.*",
@@ -26,6 +34,10 @@ local ignore_list = {
   "bytes.*",
 
   -- Built-ins
+  "io.*",
+  "client.*",
+  "req.*",
+  "res.*"
   "make",
   "len",
   "cap",
