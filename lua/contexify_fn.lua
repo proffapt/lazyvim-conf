@@ -37,7 +37,7 @@ local ignore_list = {
   "io.*",
   "client.*",
   "req.*",
-  "res.*"
+  "res.*",
   "make",
   "len",
   "cap",
