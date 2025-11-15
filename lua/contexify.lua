@@ -79,19 +79,16 @@ end
 local function get_calls_in_function(bufnr, func_name)
   bufnr = bufnr or 0
   local ft = vim.bo[bufnr].filetype
-  local parsers = require("nvim-treesitter.parsers")
   local ts = vim.treesitter
 
-  if not parsers.has_parser(ft) then
-    vim.notify("No Treesitter parser for filetype: " .. ft, vim.log.levels.ERROR)
+  -- Try to get parser - modern Neovim API
+  local parser
+  local ok, result = pcall(ts.get_parser, bufnr, ft)
+  if not ok or not result then
+    vim.notify("No parser available for filetype: " .. ft, vim.log.levels.ERROR)
     return {}
   end
-
-  local parser = parsers.get_parser(bufnr, ft)
-  if not parser then
-    vim.notify("Parser not available for " .. ft, vim.log.levels.ERROR)
-    return {}
-  end
+  parser = result
 
   local tree = parser:parse()[1]
   if not tree then
@@ -110,7 +107,7 @@ local function get_calls_in_function(bufnr, func_name)
 
   -- Query the target function by name
   local ok, query = pcall(
-    ts.query.parse,
+    vim.treesitter.query.parse,
     ft,
     [[
     (function_declaration
@@ -125,7 +122,8 @@ local function get_calls_in_function(bufnr, func_name)
 
   -- Build a set of valid call positions from tree-sitter
   local valid_calls = {}
-  local call_query = ts.query.parse(
+  local call_query_ok, call_query = pcall(
+    vim.treesitter.query.parse,
     ft,
     [[
     (call_expression
@@ -134,11 +132,13 @@ local function get_calls_in_function(bufnr, func_name)
       function: (selector_expression) @call)
   ]]
   )
-  for id, node, _ in call_query:iter_captures(root, bufnr, 0, -1) do
-    if id == 1 then
-      local start_row = node:start()
-      valid_calls[start_row + 1] = valid_calls[start_row + 1] or {}
-      table.insert(valid_calls[start_row + 1], safe_get_node_text(node))
+  if call_query_ok and call_query then
+    for id, node, _ in call_query:iter_captures(root, bufnr, 0, -1) do
+      if id == 1 then
+        local start_row = node:start()
+        valid_calls[start_row + 1] = valid_calls[start_row + 1] or {}
+        table.insert(valid_calls[start_row + 1], safe_get_node_text(node))
+      end
     end
   end
 
