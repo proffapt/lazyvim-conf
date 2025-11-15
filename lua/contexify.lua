@@ -1,5 +1,30 @@
 local contexify_fn = require("contexify_fn")
 
+-- Navigation history stack
+local nav_history = {}
+
+local function push_history(func_name, bufnr, line)
+  table.insert(nav_history, {
+    func = func_name,
+    buf = bufnr,
+    line = line,
+  })
+end
+
+local function pop_history()
+  if #nav_history > 0 then
+    return table.remove(nav_history)
+  end
+  return nil
+end
+
+local function peek_history()
+  if #nav_history > 0 then
+    return nav_history[#nav_history]
+  end
+  return nil
+end
+
 local function run_contexify(func_name)
   local script_path = "/Users/fbin-blr-0027/Desktop/scripts/contexify"
 
@@ -19,7 +44,7 @@ local function run_contexify(func_name)
 
   local handle = io.popen(cmd)
   if not handle then
-    vim.notify("Failed to start contexify script ❌", vim.log.levels.ERROR, { title = "Contexify " })
+    vim.notify("Failed to start contexify script ❌", vim.log.levels.ERROR, { title = "Contexify 💉" })
     return
   end
 
@@ -29,7 +54,7 @@ local function run_contexify(func_name)
       exit_code = tonumber(line:sub(11))
     else
       vim.schedule(function()
-        vim.notify(line, vim.log.levels.INFO, { title = "Contexify " })
+        vim.notify(line, vim.log.levels.INFO, { title = "Contexify 💉" })
       end)
     end
   end
@@ -38,9 +63,9 @@ local function run_contexify(func_name)
 
   vim.schedule(function()
     if exit_code == 0 then
-      vim.notify("Contexify successful ✅", vim.log.levels.INFO, { title = "Contexify " })
+      vim.notify("Contexify successful ✅", vim.log.levels.INFO, { title = "Contexify 💉" })
     else
-      vim.notify("Contexify failed ❌", vim.log.levels.ERROR, { title = "Contexify " })
+      vim.notify("Contexify failed ❌", vim.log.levels.ERROR, { title = "Contexify 💉" })
     end
   end)
 
@@ -229,9 +254,6 @@ end
 
 local function pick_and_process(func_name)
   local calls = get_calls_in_function(0, func_name)
-  if #calls == 0 then
-    return
-  end
 
   -- Deduplicate by function name and filter ignore list
   local unique_calls = {}
@@ -243,13 +265,44 @@ local function pick_and_process(func_name)
     end
   end
 
+  -- Add parent function to the list if we have navigation history
+  local parent = peek_history()
+  if parent then
+    table.insert(unique_calls, 1, {
+      name = parent.func,
+      buf = parent.buf,
+      line = parent.line,
+      status = "⬆️",
+      is_parent = true,
+    })
+  end
+
+  if #unique_calls == 0 then
+    return
+  end
+
   vim.ui.select(unique_calls, {
-    prompt = "Function calls in " .. func_name,
+    prompt = "Function calls in " .. func_name .. (parent and " (⬆️ = parent)" or ""),
     format_item = function(item)
       return item.status .. " " .. item.name
     end,
   }, function(choice)
     if choice then
+      -- If user selected the parent, pop history and navigate back
+      if choice.is_parent then
+        pop_history()
+        if choice.buf and choice.line then
+          vim.api.nvim_set_current_buf(choice.buf)
+          vim.api.nvim_win_set_cursor(0, { choice.line, 0 })
+        end
+        return
+      end
+
+      -- Push current function to history before navigating to child
+      local current_line = vim.fn.line(".")
+      local current_buf = vim.api.nvim_get_current_buf()
+      push_history(func_name, current_buf, current_line)
+
       -- Add ctx to ALL occurrences of this function in parent_func
       add_ctx_to_call(func_name, choice.name)
 
@@ -288,6 +341,6 @@ require("which-key").add({
     end,
     name = "Contexify",
     desc = "Inject and use context in function calls",
-    icon = "",
+    icon = "💉",
   },
 })
