@@ -3,11 +3,12 @@ local contexify_fn = require("contexify_fn")
 -- Navigation history stack
 local nav_history = {}
 
-local function push_history(func_name, bufnr, line)
+local function push_history(func_name, bufnr, line, col)
   table.insert(nav_history, {
     func = func_name,
     buf = bufnr,
     line = line,
+    col = col,
   })
 end
 
@@ -272,6 +273,7 @@ local function pick_and_process(func_name)
       name = parent.func,
       buf = parent.buf,
       line = parent.line,
+      col = parent.col,
       status = "⬆️",
       is_parent = true,
     })
@@ -293,15 +295,16 @@ local function pick_and_process(func_name)
         pop_history()
         if choice.buf and choice.line then
           vim.api.nvim_set_current_buf(choice.buf)
-          vim.api.nvim_win_set_cursor(0, { choice.line, 0 })
+          vim.api.nvim_win_set_cursor(0, { choice.line, choice.col or 0 })
         end
         return
       end
 
       -- Push current function to history before navigating to child
       local current_line = vim.fn.line(".")
+      local current_col = vim.fn.col(".")
       local current_buf = vim.api.nvim_get_current_buf()
-      push_history(func_name, current_buf, current_line)
+      push_history(func_name, current_buf, current_line, current_col)
 
       -- Add ctx to ALL occurrences of this function in parent_func
       add_ctx_to_call(func_name, choice.name)
