@@ -325,7 +325,7 @@ local function pick_and_process(func_name)
         vim.api.nvim_win_set_cursor(0, { first_call.line, col })
 
         -- Trigger LSP "go to definition"
-        vim.lsp.buf.definition()
+        vim.cmd("normal gd")
       end
     end
   end)
