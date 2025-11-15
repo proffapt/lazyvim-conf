@@ -11,6 +11,7 @@ local ignore_list = {
   -- database
   "database.*",
   "txn.*",
+  "tx.*",
   "sqlx.*",
 
   -- log
