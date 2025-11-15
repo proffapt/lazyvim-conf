@@ -18,6 +18,9 @@ local ignore_list = {
   "log.*",
   "errorHandler.*",
 
+  -- general
+  "general.*",
+
   -- errors
   "errors.*",
   "err.*",
