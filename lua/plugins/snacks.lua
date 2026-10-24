@@ -1,7 +1,23 @@
+-- hidden dirs we never want in file/grep results
+local search_exclude = {
+  ".git",
+  ".codegraph",
+  ".opencode",
+  ".claude",
+  ".cursor*",
+  ".cortexkit",
+  ".omo",
+  ".trae",
+  ".act",
+  "tmp",
+}
+
 return {
   {
     "folke/snacks.nvim",
     opts = {
+      -- disable LSP/treesitter/etc. on huge files (default 1.5MB)
+      bigfile = { size = 500 * 1024 },
       picker = {
         sources = {
           explorer = {
@@ -11,6 +27,11 @@ return {
           files = {
             ignored = false,
             hidden = true,
+            exclude = search_exclude,
+          },
+          grep = {
+            hidden = true,
+            exclude = search_exclude,
           },
         },
       },
