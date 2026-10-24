@@ -74,6 +74,8 @@ return {
           local root = config.root_dir or params.rootPath
           if is_heavy(root) then
             config.settings = vim.tbl_deep_extend("force", config.settings or {}, heavy_settings)
+            -- lang.go extra's semantic tokens workaround reads this and breaks if we strip the provider
+            config.init_options = vim.tbl_deep_extend("force", config.init_options or {}, { semanticTokens = false })
           end
         end,
       })
@@ -89,5 +91,20 @@ return {
         end,
       })
     end,
+  },
+
+  -- lang.go enables golangci-lint; far too heavy on huge repos (CI/reviewdog covers it)
+  {
+    "mfussenegger/nvim-lint",
+    optional = true,
+    opts = {
+      linters = {
+        golangcilint = {
+          condition = function(ctx)
+            return not is_heavy(ctx.filename)
+          end,
+        },
+      },
+    },
   },
 }
